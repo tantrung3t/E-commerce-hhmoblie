@@ -1,12 +1,12 @@
-from rest_framework import generics, permissions, response, status
+from rest_framework import generics, permissions, response, status, views
 from rest_framework_simplejwt import authentication
-
-from variants.models import Variant
 from hoang_ha_mobile.base.errors import check_valid_item
-
+from bases.service.stripe.stripe import stripe_payment_intent_create
+from bases.service.stripe.stripe import stripe_payment_intent_confirm
+from bases.service.fcm.notification import fcm_send
+from variants.models import Variant
 from . import serializers
 from .. import models
-
 class ListCreateOrderAPIView(generics.ListCreateAPIView):
     authentication_classes = [authentication.JWTAuthentication]
     permission_classes = [permissions.IsAuthenticated]
@@ -24,14 +24,14 @@ class ListCreateOrderAPIView(generics.ListCreateAPIView):
             return check_items
         if(serializer.is_valid()):            
             self.instance = serializer.save(created_by=self.request.user)
-            instance_price = 0
+            total_price = 0
             for order_detail in array_order_detail:       
                 variant = Variant.objects.get(id=order_detail.get('variant'))
                 if(variant.sale > 0):
                     price = variant.sale
                 else:
                     price = variant.price
-                instance_price += int(price) * int(order_detail.get('quantity'))
+                total_price += int(price) * int(order_detail.get('quantity'))
                 data = {
                     "order": self.instance.id,
                     "variant": order_detail.get('variant'),
@@ -41,9 +41,11 @@ class ListCreateOrderAPIView(generics.ListCreateAPIView):
                 serializer = serializers.OrderDetailSerializer(data=data)
                 if(serializer.is_valid()):
                     serializer.save()
-            self.instance.total = instance_price
+            self.instance.total = total_price
             self.instance.save()
+            res = stripe_payment_intent_create(self.instance.id, total_price, self.request.user)
             serializer = serializers.OrderSerializer(self.instance)
+            fcm_send()
             return response.Response(data=serializer.data, status=status.HTTP_201_CREATED)
         else:
             return response.Response(serializer.errors, status= status.HTTP_400_BAD_REQUEST)

@@ -21,6 +21,12 @@ from django.conf import settings
 urlpatterns = [
     path('admin-site/', admin.site.urls),
 
+    path('payments/', include('payments.urls')),
+
+    path('admin/', include('transactions.administrator.urls')),
+
+    path('devices/', include('devices.urls')),
+
     path('admin/accounts/', include('accounts.administrator.urls')),
     path('customer/accounts/', include('accounts.customer.urls')),
     path('accounts/', include('accounts.guest.urls')),
