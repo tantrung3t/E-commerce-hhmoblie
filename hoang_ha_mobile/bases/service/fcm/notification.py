@@ -1,35 +1,40 @@
+
 import os
-import json
-import requests
+import firebase_admin
 from devices import models
-from dotenv import load_dotenv
-load_dotenv()
+from firebase_admin import credentials, messaging
+from django.contrib.auth import get_user_model
+from devices.serializers import TokenSerializer
+
+User = get_user_model()
+
+# setup credential for firebase
+credential_json_path = str(os.path.dirname(
+    os.path.abspath(__file__))) + r'\serviceAccountKey.json'
+cred = credentials.Certificate(credential_json_path)
+firebase_admin.initialize_app(cred)
 
 
-def send_notification(registration_ids, message_title, message_desc):
-    fcm_api = os.getenv('FCM_API_KEY')
-    url = "https://fcm.googleapis.com/fcm/send"
-    headers = {
-        "Content-Type": "application/json",
-        "Authorization": 'key='+fcm_api
-    }
-    payload = {
-        "registration_ids": registration_ids,
-        "priority": "high",
-        "notification": {
-            "body": message_desc,
-            "title": message_title,
-            "image": "https://world.com"
-        }
-    }
-    # send request to Firebase Cloud Messaging
-    requests.post(url, data=json.dumps(payload), headers=headers)
+# function push notification fcm
+def sendPush(title, msg, registration_token, dataObject=None):
+    message = messaging.MulticastMessage(
+        notification=messaging.Notification(
+            title=title,
+            body=msg
+        ),
+        data=dataObject,
+        tokens=registration_token
+    )
+    messaging.send_multicast(message)
 
 
 def fcm_send():
     # get device token of admin account
-    token = models.Token.objects.get(
-        user_id='5feec0fc-a836-4d93-b09e-26f966567d53')
-    registration = [token.token_device]
-    # call function
-    send_notification(registration, "Order", "Have 1 order created")
+    token = models.Token.objects.filter(user_id__is_superuser=True)
+    token_serializer = TokenSerializer(token, many=True)
+    registration = []
+    # add device token into list
+    for x in range(len(token)):
+        registration.append(token_serializer.data[x]['token_device'])
+    # call function sendPush to push notification
+    sendPush("New order", "You have 1 order", registration)

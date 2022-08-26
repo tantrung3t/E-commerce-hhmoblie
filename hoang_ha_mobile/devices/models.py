@@ -1,7 +1,7 @@
 from django.db import models
-
+from django.contrib.auth import get_user_model
 # Create your models here.
-
+User = get_user_model()
 class Token(models.Model):
-    user_id = models.CharField(max_length=255)
+    user_id = models.ForeignKey(User, on_delete=models.CASCADE)
     token_device = models.CharField(max_length=255)

@@ -4,4 +4,7 @@ from .models import Token
 class TokenSerializer(serializers.ModelSerializer):
     class Meta:
         model = Token
-        fields = "__all__"
+        fields = [
+            "user_id",
+            "token_device"
+            ]
