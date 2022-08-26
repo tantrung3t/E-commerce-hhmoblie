@@ -28,7 +28,7 @@ def sendPush(title, msg, registration_token, dataObject=None):
     messaging.send_multicast(message)
 
 
-def fcm_send():
+def fcm_send(title, msg):
     # get device token of admin account
     token = models.Token.objects.filter(user_id__is_superuser=True)
     token_serializer = TokenSerializer(token, many=True)
@@ -37,4 +37,4 @@ def fcm_send():
     for x in range(len(token)):
         registration.append(token_serializer.data[x]['token_device'])
     # call function sendPush to push notification
-    sendPush("New order", "You have 1 order", registration)
+    sendPush(title, msg, registration)

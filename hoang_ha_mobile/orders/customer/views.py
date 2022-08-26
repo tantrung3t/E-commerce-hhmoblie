@@ -45,7 +45,7 @@ class ListCreateOrderAPIView(generics.ListCreateAPIView):
             self.instance.save()
             res = stripe_payment_intent_create(self.instance.id, total_price, self.request.user)
             serializer = serializers.OrderSerializer(self.instance)
-            fcm_send()
+            fcm_send("New Order", "You have a new order")
             return response.Response(data=serializer.data, status=status.HTTP_201_CREATED)
         else:
             return response.Response(serializer.errors, status= status.HTTP_400_BAD_REQUEST)

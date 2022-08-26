@@ -18,9 +18,11 @@ class StipeWebhookAPI(APIView):
 
     def post(self, request):
         event = stripe.stripe_webhook(request)
-        order_id = event.data.object.metadata.order_id
         if(type(event).__name__ == "SignatureVerificationError"):
             return response_exception(event)
+        if event.type == 'setup_intent.created':
+            return Response(status=status.HTTP_200_OK)
+        order_id = event.data.object.metadata.order_id
         if event.type == 'payment_intent.created':
             order.order_created(order_id)
         if event.type == 'charge.succeeded':
