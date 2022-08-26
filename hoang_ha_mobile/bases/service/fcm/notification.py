@@ -3,8 +3,9 @@ import os
 import firebase_admin
 from devices import models
 from firebase_admin import credentials, messaging
-from django.contrib.auth import get_user_model
 from devices.serializers import TokenSerializer
+from django.contrib.auth import get_user_model
+
 
 User = get_user_model()
 

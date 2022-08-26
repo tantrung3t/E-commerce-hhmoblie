@@ -1,7 +1,6 @@
 import os
 import stripe
 from dotenv import load_dotenv
-from rest_framework import status
 from rest_framework.response import Response
 from bases.exception.exceptions import response_exception
 
