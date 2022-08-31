@@ -18,6 +18,7 @@ def db_update(order_id, status):
     serializer.save()
 
 
+
 def order_created(order_id):
     print("order_created")
 
@@ -26,8 +27,8 @@ def charge_succeeded(order_id):
     db_update(order_id, "charge_succeeded")
 
 
-def payment_failed(order_id):
-    db_update(order_id, "payment_failed")
+def charge_failed(order_id):
+    db_update(order_id, "charge_failed")
 
 
 def charge_refunded(order_id):

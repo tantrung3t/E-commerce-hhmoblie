@@ -30,22 +30,27 @@ def stripe_customer_search(user):  # function search stripe customer
     return customer_id
 
 
-def stripe_payment_intent_create(order_id, amount, user):  # create PaymentIntent
-    customer = stripe_customer_search(user)
+# create PaymentIntent
+def stripe_payment_intent_create(order, amount, user, customer, payment_method):
     try:
         payment = stripe.PaymentIntent.create(
-            amount=amount,
+            amount=amount*100,  # unit is cent
             currency="usd",
+            payment_method=payment_method,
             payment_method_types=['card'],
             description="Payment",
             metadata={
-                "order_id": order_id,
-                "account_id": user.id
+                "order_id": order,
+                "account_id": user
             },
             customer=customer
         )
+    except stripe.error.CardError as e:
+        return response_exception("card invalid, please choose another card")
+    except stripe.error.InvalidRequestError as e:
+        return response_exception("no such payment_method")
     except Exception as e:
-        return response_exception(e)
+        return response_exception("some error occurred try again later or choose another payment method")
     return Response(data=payment)
 
 
@@ -56,9 +61,14 @@ def stripe_payment_intent_confirm(payment_intent, payment_method):
             payment_intent,
             payment_method=payment_method,
         )
+    except stripe.error.CardError as e:
+        return response_exception("card invalid, please choose another card")
+    except stripe.error.InvalidRequestError as e:
+        return response_exception("no such payment_method")
     except Exception as e:
-        return e
-    return confirm
+        # message = str(e)[(str(e).find(":", 0, len(str(e))))+2: len(str(e))]
+        return response_exception("some error occurred try again later or choose another payment method")
+    return Response(data=confirm)
 
 
 # Function listen event from Stripe
@@ -120,17 +130,17 @@ def stripe_payment_intent_search(order_id):
 
 
 # print(stripe_payment_intent_search(90).charges.data[0].id)
-def stripe_refund(charge):
+def stripe_refund(payment_intent):
     try:
         refund = stripe.Refund.create(
-            charge=charge,
+            payment_intent=payment_intent,
         )
     except Exception as e:
         return e
     return refund
 
 
-def stripe_transaction(txn):
+def stripe_transaction(txn):  # call Transaction Stripe
     try:
         transaction = stripe.BalanceTransaction.retrieve(
             txn,

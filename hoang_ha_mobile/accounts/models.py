@@ -49,6 +49,7 @@ class CustomUser(AbstractUser):
     updated_by = models.CharField(max_length=255, blank=True)
     block_by = models.CharField(max_length=255, blank=True, null=True)
     image = models.ImageField(null=True, upload_to = "images/profile/")
+    stripe_customer_id = models.CharField(max_length=255, null=True, blank=True)
     username = None
 
     objects = UserManager()

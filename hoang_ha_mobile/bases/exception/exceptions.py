@@ -2,10 +2,10 @@ from rest_framework import status
 from rest_framework.response import Response
 
 
-def response_exception(e):
+def response_exception(message):
     return Response(
-        data={
-            "message": str(e)
+        data = {
+            "message": str(message)
         },
-        status=status.HTTP_400_BAD_REQUEST
+        status = status.HTTP_400_BAD_REQUEST
     )

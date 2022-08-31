@@ -1,3 +1,4 @@
+from re import T
 from django.shortcuts import get_object_or_404
 
 from rest_framework.response import Response
@@ -6,8 +7,11 @@ from rest_framework import generics
 
 from variants.models import Variant
 from hoang_ha_mobile.base.errors import check_valid_item
-from .serializers import OrderSerializer, OrderDetailSerializer, ListOrderSerializer
+from .serializers import OrderSerializer, OrderReadSerializer, OrderDetailSerializer, ListOrderSerializer
 from ..models import Order
+from bases.service.stripe.stripe import stripe_payment_intent_create
+from bases.service.stripe.stripe import stripe_payment_intent_confirm
+from bases.service.fcm.notification import fcm_send
 
 
 class CreateOrderApiView(generics.ListCreateAPIView):
@@ -55,15 +59,39 @@ class CreateOrderApiView(generics.ListCreateAPIView):
                 if(serializer.is_valid()):
                     serializer.save()
             self.instance.total = total
-            self.instance.save()
+
             serializer = self.get_serializer(self.instance)
-            return Response(data=serializer.data, status=status.HTTP_201_CREATED)
+            res = stripe_payment_intent_create(
+                order=self.instance.id,
+                amount=total,
+                user=None,
+                customer=None,
+                payment_method=None
+            )
+            self.instance.payment_intent = res.data.id
+            self.instance.save()
+            if(res.status_code == 400):
+                return Response(data=res.data, status=status.HTTP_400_BAD_REQUEST)
+            confirm_payment = stripe_payment_intent_confirm(
+                res.data.id, request.data.get('payment_method'))
+            if(confirm_payment.status_code == 400):
+                self.instance.delete()
+                return Response(data={
+                    "message": "invalid card, please try again with another card"
+                }, status=status.HTTP_400_BAD_REQUEST)
+            fcm_send("New Order", "You have a new order")
+            data = {
+                "message": "order success",
+                "charge": True,
+                "orders": serializer.data
+            }
+            return Response(data=data, status=status.HTTP_201_CREATED)
         else:
             return Response(serializer.errors)
 
 
 class OrderDetailApiView(generics.RetrieveUpdateAPIView):
-    serializer_class = OrderSerializer
+    serializer_class = OrderReadSerializer
     queryset = Order.objects.all().prefetch_related()
     lookup_url_kwarg = "order_id"
 

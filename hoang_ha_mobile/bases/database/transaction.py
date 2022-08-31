@@ -8,6 +8,10 @@ def save(object):
     serializer.save()
 
 def balance_transaction(object):
+    try:
+        customer = object.metadata.account_id
+    except:
+        customer = None        
     if(object.refunded):
         balance_transaction = stripe.stripe_transaction(
             object.refunds.data[0].balance_transaction
@@ -18,10 +22,12 @@ def balance_transaction(object):
             "amount": balance_transaction.amount,
             "fee": balance_transaction.fee,
             "net": balance_transaction.net,
+            "unit": 100,
+            "currency": balance_transaction.currency,
             "order": object.metadata.order_id,
-            "customer": object.metadata.account_id,
+            "customer": customer,
             "payment_id": object.payment_intent,
-            "description": "Refund"
+            "description": "Refund for charge (Payment)"
         }
     else:
         balance_transaction = stripe.stripe_transaction(
@@ -33,9 +39,11 @@ def balance_transaction(object):
             "amount": balance_transaction.amount,
             "fee": balance_transaction.fee,
             "net": balance_transaction.net,
+            "unit": 100,
+            "currency": balance_transaction.currency,
             "order": object.metadata.order_id,
-            "customer": object.metadata.account_id,
+            "customer": customer,
             "payment_id": object.payment_intent,
-            "description": balance_transaction.source
-        }
+            "description": "Payment success"
+        }   
     return data

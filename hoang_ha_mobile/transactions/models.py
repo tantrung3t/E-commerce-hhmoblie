@@ -1,3 +1,4 @@
+from locale import currency
 from sqlite3 import Timestamp
 from django.db import models
 from django.contrib.auth import get_user_model
@@ -17,8 +18,10 @@ class Transaction(models.Model):
     amount = models.BigIntegerField()
     fee = models.BigIntegerField(default=0)
     net = models.BigIntegerField()
+    unit = models.IntegerField(default=100)
+    currency = models.CharField(max_length=255, default=None)
     order = models.ForeignKey(Order, on_delete=models.CASCADE)
-    customer = models.ForeignKey(User, on_delete=models.CASCADE, default=None)
+    customer = models.ForeignKey(User, on_delete=models.CASCADE, default=None, null=True, blank=True)
     payment_id = models.CharField(max_length=50)
     description = models.CharField(max_length=255)
 

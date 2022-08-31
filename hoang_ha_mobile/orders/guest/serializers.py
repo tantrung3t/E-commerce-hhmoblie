@@ -72,10 +72,36 @@ class OrderSerializer(serializers.ModelSerializer):
             'note',
             'total',
             'status',
+            'order_details',
+        ]
+class OrderReadSerializer(serializers.ModelSerializer):
+    order_details = OrderDetailReadSerializer(many=True, read_only=True)
+
+    def validate_phone(self, value):
+        try:
+            int(value)
+            if (len(value) != 10):
+                raise serializers.ValidationError(
+                    "phone number is not available")
+            return value
+        except:
+            raise serializers.ValidationError("phone number is not available")
+
+    class Meta:
+        model = Order
+        fields = [
+            'id',
+            'name',
+            'phone',
+            'email',
+            'shipping',
+            'delivery_address',
+            'note',
+            'total',
+            'status',
             'charge_status',
             'order_details',
         ]
-
 
 class CancelOrderSerializer(serializers.ModelSerializer):
     class Meta:
