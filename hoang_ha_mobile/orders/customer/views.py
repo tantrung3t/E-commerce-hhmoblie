@@ -70,7 +70,7 @@ class ListCreateOrderAPIView(generics.ListCreateAPIView):
                 res.data.id, request.data.get('payment_method'))
             if(confirm_payment.status_code == 400):
                 data = {
-                    "message": confirm_payment.data['message'],
+                    "message": "invalid card, please try again with another card",
                     "charge": False,
                     "orders": serializer.data
                 }
